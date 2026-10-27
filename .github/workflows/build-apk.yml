@@ -1,0 +1,38 @@
+name: Build LastWave debug APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Unzip project
+        run: |
+          unzip -q ./*.zip -d src
+          cd src/*/ && pwd && ls
+          echo "PROJ=$(pwd)" >> $GITHUB_ENV
+
+      - name: Install CMake for native code
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "cmake;3.22.1" || true
+
+      - name: Build debug APK
+        working-directory: ${{ env.PROJ }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: LastWave-debug-apk
+          path: ${{ env.PROJ }}/app/build/outputs/apk/debug/*.apk
